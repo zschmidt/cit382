@@ -15,8 +15,6 @@
     </style>
     <script>   
       var constants = {
-        canvasWidth: 600, // In pixels.
-        canvasHeight: 600, // In pixels.
         leftArrow: 37,
         upArrow: 38,
         rightArrow: 39,
@@ -27,7 +25,7 @@
         yMax: 9, 
         xDelta: 0.2, // Make smaller for more surface points. 
         yDelta: 0.2, // Make smaller for more surface points. 
-        colorMap: ["#060", "#090", "#0C0", "#0F0", "#9F0", "#9C0", "#990", "#960", "#930", "#900", "#C00"], // There are eleven possible "vertical" color values for the surface, based on the last row of http://www.cs.siena.edu/~lederman/truck/AdvanceDesignTrucks/html_color_chart.gif
+        colorMap: ["#060", "#090", "#0C0", "#0F0", "#9F0", "#9C0", "#990", "#960", "#930", "#900", "#C00"],
         pointWidth: 2, // The size of a rendered surface point (i.e., rectangle width and height) in pixels.
         dTheta: 0.05, // The angle delta, in radians, by which to rotate the surface per key press.
         surfaceScale: 24 // An empirically derived constant that makes the surface a good size for the given canvas size.
@@ -40,17 +38,13 @@
 
       // -----------------------------------------------------------------------------------------------------  
 
-      var controlKeyPressed = false; // Shared between processKeyDown() and processKeyUp().
       var surface = new Surface(); // A set of points (in vector format) representing the surface.
 
       // -----------------------------------------------------------------------------------------------------
 
       function point(x, y, z)
-      /*
-        Given a (x, y, z) surface point, returns the 3 x 1 vector form of the point.
-      */
       {       
-        return [x, y, z]; // Return a 3 x 1 vector representing a traditional (x, y, z) surface point. This vector form eases matrix multiplication.
+        return [x, y, z]; 
       }
       
       // -----------------------------------------------------------------------------------------------------
@@ -117,58 +111,29 @@
         {
           this.points[i].color = constants.colorMap[ Math.floor( (this.points[i][Z]-this.zMin)/zDelta ) ];
         }
-                
-        /* Note that the prior FOR loop is functionally equivalent to the follow (much less elegant) loop:       
-        for (var i = 0; i < this.points.length; i++)
-        {
-          if (this.points[i][Z] <= this.zMin + zDelta) {this.points[i].color = "#060";}
-          else if (this.points[i][Z] <= this.zMin + 2*zDelta) {this.points[i].color = "#090";}
-          else if (this.points[i][Z] <= this.zMin + 3*zDelta) {this.points[i].color = "#0C0";}
-          else if (this.points[i][Z] <= this.zMin + 4*zDelta) {this.points[i].color = "#0F0";}
-          else if (this.points[i][Z] <= this.zMin + 5*zDelta) {this.points[i].color = "#9F0";}
-          else if (this.points[i][Z] <= this.zMin + 6*zDelta) {this.points[i].color = "#9C0";}
-          else if (this.points[i][Z] <= this.zMin + 7*zDelta) {this.points[i].color = "#990";}
-          else if (this.points[i][Z] <= this.zMin + 8*zDelta) {this.points[i].color = "#960";}
-          else if (this.points[i][Z] <= this.zMin + 9*zDelta) {this.points[i].color = "#930";}
-          else if (this.points[i][Z] <= this.zMin + 10*zDelta) {this.points[i].color = "#900";}          
-          else {this.points[i].color = "#C00";}
-        }
-        */
       }
-      
+
       // -----------------------------------------------------------------------------------------------------
-      
-      function appendCanvasElement()
-      /*
-        Creates and then appends the "myCanvas" canvas element to the DOM.
-      */
-      {
-        var canvasElement = document.createElement('canvas');
-        
-        canvasElement.width = constants.canvasWidth;
-        canvasElement.height = constants.canvasHeight;
-        canvasElement.id = "myCanvas";
 
-        canvasElement.getContext('2d').translate(constants.canvasWidth/2, constants.canvasHeight/2); // Translate the surface's origin to the center of the canvas.
-        
-        document.body.appendChild(canvasElement); // Make the canvas element a child of the body element.
-      }
-
-      //------------------------------------------------------------------------------------------------------
 
       Surface.prototype.sortByZIndex = function(A, B) 
       {
         return A[Z] - B[Z]; // Determines if point A is behind, in front of, or at the same level as point B (with respect to the z-axis).
       }
-            
+
+
       // -----------------------------------------------------------------------------------------------------
             
       Surface.prototype.draw = function()
       {
-        var myCanvas = document.getElementById("myCanvas"); // Required for Firefox.
+        var myCanvas = document.getElementById('myCanvas');
         var ctx = myCanvas.getContext("2d");
 
-        this.points = surface.points.sort(surface.sortByZIndex); // Sort the set of points based on relative z-axis position. If the points are visibly small, you can sort of get away with removing this step.
+        myCanvas.width = myCanvas.width; //clear the canvas
+
+        ctx.translate(myCanvas.height/2,myCanvas.width/2); // Translate the surface's origin to the center of the canvas.
+
+        this.points = surface.points.sort(surface.sortByZIndex);
 
         for (var i = 0; i < this.points.length; i++)
         {
@@ -198,16 +163,6 @@
           }
         }     
       }
-      
-      // -----------------------------------------------------------------------------------------------------
-
-      Surface.prototype.erase = function()
-      {
-        var myCanvas = document.getElementById("myCanvas"); // Required for Firefox.
-        var ctx = myCanvas.getContext("2d");
-
-        ctx.clearRect(-constants.canvasWidth/2, -constants.canvasHeight/2, myCanvas.width, myCanvas.height);
-      }
 
       // -----------------------------------------------------------------------------------------------------
 
@@ -216,22 +171,14 @@
         Assumes "sign" is either 1 or -1, which is used to rotate the surface "clockwise" or "counterclockwise".
       */
       {
-        var Rx = [ [0, 0, 0],
-                   [0, 0, 0],
-                   [0, 0, 0] ]; // Create an initialized 3 x 3 rotation matrix.
-                           
-        Rx[0][0] = 1;
-        Rx[0][1] = 0; // Redundant but helps with clarity.
-        Rx[0][2] = 0; 
-        Rx[1][0] = 0; 
-        Rx[1][1] = Math.cos( sign*constants.dTheta );
-        Rx[1][2] = -Math.sin( sign*constants.dTheta );
-        Rx[2][0] = 0; 
-        Rx[2][1] = Math.sin( sign*constants.dTheta );
-        Rx[2][2] = Math.cos( sign*constants.dTheta );
+        var cosTheta = Math.cos( sign*constants.dTheta );
+        var sinTheta = Math.sin( sign*constants.dTheta );
+
+        var Rx = [ [1, 0, 0],
+                   [0, cosTheta, -1*sinTheta],
+                   [0, sinTheta, cosTheta] ];
         
         this.multi(Rx); // If P is the set of surface points, then this method performs the matrix multiplcation: Rx * P
-        this.erase(); // Note that one could use two canvases to speed things up, which also eliminates the need to erase.
         this.draw();
       }
          
@@ -242,104 +189,37 @@
         Assumes "sign" is either 1 or -1, which is used to rotate the surface "clockwise" or "counterclockwise".
       */      
       {
-        var Ry = [ [0, 0, 0],
-                   [0, 0, 0],
-                   [0, 0, 0] ]; // Create an initialized 3 x 3 rotation matrix.
-                           
-        Ry[0][0] = Math.cos( sign*constants.dTheta );
-        Ry[0][1] = 0; // Redundant but helps with clarity.
-        Ry[0][2] = Math.sin( sign*constants.dTheta );
-        Ry[1][0] = 0; 
-        Ry[1][1] = 1;
-        Ry[1][2] = 0; 
-        Ry[2][0] = -Math.sin( sign*constants.dTheta );
-        Ry[2][1] = 0; 
-        Ry[2][2] = Math.cos( sign*constants.dTheta );
+        var cosTheta = Math.cos( sign*constants.dTheta );
+        var sinTheta = Math.sin( sign*constants.dTheta );
+        var Ry = [ [cosTheta, 0, sinTheta],
+                   [0, 1, 0],
+                   [-1*sinTheta, 0, cosTheta] ];
         
         this.multi(Ry); // If P is the set of surface points, then this method performs the matrix multiplcation: Rx * P
-        this.erase(); // Note that one could use two canvases to speed things up, which also eliminates the need to erase.
-        this.draw();
-      }
- 
-      // -----------------------------------------------------------------------------------------------------
-         
-      Surface.prototype.zRotate = function(sign)
-      /*
-        Assumes "sign" is either 1 or -1, which is used to rotate the surface "clockwise" or "counterclockwise".
-      */      
-      {
-        var Rz = [ [0, 0, 0],
-                   [0, 0, 0],
-                   [0, 0, 0] ]; // Create an initialized 3 x 3 rotation matrix.
-                           
-        Rz[0][0] = Math.cos( sign*constants.dTheta );
-        Rz[0][1] = -Math.sin( sign*constants.dTheta );        
-        Rz[0][2] = 0; // Redundant but helps with clarity.
-        Rz[1][0] = Math.sin( sign*constants.dTheta );
-        Rz[1][1] = Math.cos( sign*constants.dTheta );
-        Rz[1][2] = 0;
-        Rz[2][0] = 0
-        Rz[2][1] = 0;
-        Rz[2][2] = 1;
-        
-        this.multi(Rz); // If P is the set of surface points, then this method performs the matrix multiplcation: Rx * P
-        this.erase(); // Note that one could use two canvases to speed things up, which also eliminates the need to erase.
         this.draw();
       }
      
       // -----------------------------------------------------------------------------------------------------
 
       function processKeyDown(evt)
-      {                    
-        if (evt.ctrlKey)
-        {
-          switch (evt.keyCode)
-          {
-            case constants.upArrow: 
-              // No operation other than preventing the default behavior of the arrow key.
-              evt.preventDefault(); // This prevents the default behavior of the arrow keys, which is to scroll the browser window when scroll bars are present. The user can still scroll the window with the mouse.              
-              break;
-            case constants.downArrow:
-              // No operation other than preventing the default behavior of the arrow key.
-              evt.preventDefault();
-              break;
-            case constants.leftArrow:
-              // console.log("ctrl+leftArrow");
-              surface.zRotate(-1); // The sign determines if the surface rotates "clockwise" or "counterclockwise". 
-              evt.preventDefault(); 
-              break;
-            case constants.rightArrow:
-              // console.log("ctrl+rightArrow");
-              surface.zRotate(1);
-              evt.preventDefault(); 
-              break;
-          }
-          return; // When the control key is pressed, only the left and right arrows have meaning, no need to process any other key strokes (i.e., bail now).
-        }
-        
-        // Assert: The control key is not pressed.
-
+      {
         switch (evt.keyCode)
         {
           case constants.upArrow:
-            // console.log("upArrow");
+            evt.preventDefault();
             surface.xRotate(1);
-            evt.preventDefault(); 
             break;
           case constants.downArrow:
-            // console.log("downArrow");
-            surface.xRotate(-1); 
-            evt.preventDefault(); 
+            evt.preventDefault();
+            surface.xRotate(-1);
             break;
           case constants.leftArrow:
-            // console.log("leftArrow");
-            surface.yRotate(-1);  
-            evt.preventDefault(); 
+            evt.preventDefault();
+            surface.yRotate(-1); 
             break;
           case constants.rightArrow:
-            // console.log("rightArrow");
+            evt.preventDefault();
             surface.yRotate(1);   
-            evt.preventDefault(); 
             break;
         }
       }
@@ -348,7 +228,6 @@
       
       function onloadInit()
       {
-        appendCanvasElement(); // Create and append the canvas element to the DOM.
         surface.draw(); // Draw the surface on the canvas.
         document.addEventListener('keydown', processKeyDown, false); // Used to detect if the control key has been pressed.
       }
@@ -362,6 +241,6 @@
   </head>
   <body>
     <h1>Canvas Surface Rotation</h1>
-    <!-- The canvas element is append to the DOM here. -->
+    <canvas id="myCanvas" height="600px" width="600px"></canvas>
   </body>
 </html>
