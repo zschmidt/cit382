@@ -35,7 +35,9 @@ function main(){
 			//data is simply full of goodies... dump it to have a look!
 			data = JSON.parse(data);
 			var city = data.name;
+			//The temp provided by the api is in kelvin... we'll need to convert it
 			var temp = (data.main.temp - 273.15)* 1.8000 + 32.00;
+			//Here comes a template literal!
 			console.log(`\nThe temperature in ${city} is ${temp.toFixed(2)} degrees fahrenheit\n`);
 		});
 	});
